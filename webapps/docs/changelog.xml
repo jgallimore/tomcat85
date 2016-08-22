@@ -84,6 +84,11 @@
         align it with the default cookie parser. Document the impact system properties have on
         cookie name validation. (mark)
       </fix>
+      <add>
+        When adding and removing <code>ResourceLink</code>s dynamically, ensure
+        that the global resource is only visible via the
+        <code>ResourceLinkFactory</code> when it is meant to be. (markt)
+      </add>
     </changelog>
   </subsection>
   <subsection name="Coyote">
