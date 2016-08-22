@@ -16,10 +16,7 @@
  */
 package org.apache.naming.factory;
 
-import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.naming.Context;
 import javax.naming.Name;
@@ -29,7 +26,6 @@ import javax.naming.Reference;
 import javax.naming.spi.ObjectFactory;
 
 import org.apache.naming.ResourceLinkRef;
-import org.apache.naming.StringManager;
 
 /**
  * <p>Object factory for resource links.</p>
@@ -40,15 +36,11 @@ public class ResourceLinkFactory implements ObjectFactory {
 
     // ------------------------------------------------------- Static Variables
 
-    private static final StringManager sm = StringManager.getManager(ResourceLinkFactory.class);
-
     /**
      * Global naming context.
      */
     private static Context globalContext = null;
 
-    private static Map<ClassLoader,Map<String,String>> globalResourceRegistrations =
-            new ConcurrentHashMap<>();
 
     // --------------------------------------------------------- Public Methods
 
@@ -109,12 +101,9 @@ public class ResourceLinkFactory implements ObjectFactory {
 
     private static boolean validateGlobalResourceAccess(String globalName) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        while (cl != null) {
-            Map<String,String> registrations = globalResourceRegistrations.get(cl);
-            if (registrations != null && registrations.containsValue(globalName)) {
-                return true;
-            }
-            cl = cl.getParent();
+        Map<String,String> registrations = globalResourceRegistrations.get(cl);
+        if (registrations != null && registrations.containsValue(globalName)) {
+            return true;
         }
         return false;
     }
@@ -143,8 +132,9 @@ public class ResourceLinkFactory implements ObjectFactory {
         RefAddr refAddr = ref.get(ResourceLinkRef.GLOBALNAME);
         if (refAddr != null) {
             globalName = refAddr.getContent().toString();
-            // Confirm that the current web application is currently configured
-            // to access the specified global resource
+            // When running under a security manager confirm that the current
+            // web application has really been configured to access the specified
+            // global resource
             if (!validateGlobalResourceAccess(globalName)) {
                 return null;
             }
@@ -152,20 +142,14 @@ public class ResourceLinkFactory implements ObjectFactory {
             result = globalContext.lookup(globalName);
             // Check the expected type
             String expectedClassName = ref.getClassName();
-            if (expectedClassName == null) {
-                throw new IllegalArgumentException(
-                        sm.getString("resourceLinkFactory.nullType", name, globalName));
-            }
             try {
                 Class<?> expectedClazz = Class.forName(
                         expectedClassName, true, Thread.currentThread().getContextClassLoader());
                 if (!expectedClazz.isAssignableFrom(result.getClass())) {
-                    throw new IllegalArgumentException(sm.getString("resourceLinkFactory.wrongType",
-                            name, globalName, expectedClassName, result.getClass().getName()));
+                    throw new IllegalArgumentException();
                 }
             } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException(sm.getString("resourceLinkFactory.unknownType",
-                        name, globalName, expectedClassName), e);
+                throw new IllegalStateException(e);
             }
             return result;
         }
