@@ -292,13 +292,17 @@ public class DataSourceRealm extends RealmBase {
 
         String dbCredentials = getPassword(dbConnection, username);
 
-        if (credentials == null || dbCredentials == null) {
+        if(dbCredentials == null) {
+            // User was not found in the database.
+            // Waste a bit of time as not to reveal that the user does not exist.
+            getCredentialHandler().mutate(credentials);
+
             if (containerLog.isTraceEnabled())
-                containerLog.trace(
-                    sm.getString("dataSourceRealm.authenticateFailure",
-                                 username));
+                containerLog.trace(sm.getString("dataSourceRealm.authenticateFailure",
+                                                username));
             return null;
         }
+
 
         // Validate the user's credentials
         boolean validated = getCredentialHandler().matches(credentials, dbCredentials);

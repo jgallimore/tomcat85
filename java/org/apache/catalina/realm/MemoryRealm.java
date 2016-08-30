@@ -116,17 +116,18 @@ public class MemoryRealm  extends RealmBase {
 
         GenericPrincipal principal = principals.get(username);
 
-        boolean validated;
-        if (principal == null) {
-            validated = false;
-        } else {
-            if (credentials == null || principal.getPassword() == null) {
-                if (log.isDebugEnabled())
-                    log.debug(sm.getString("memoryRealm.authenticateFailure", username));
-                return (null);
-            }
-            validated = getCredentialHandler().matches(credentials, principal.getPassword());
+        if(principal == null || principal.getPassword() == null) {
+            // User was not found in the database or the password was null
+            // Waste a bit of time as not to reveal that the user does not exist.
+            getCredentialHandler().mutate(credentials);
+
+            if (log.isDebugEnabled())
+                log.debug(sm.getString("memoryRealm.authenticateFailure", username));
+            return null;
         }
+
+        boolean validated = getCredentialHandler().matches(credentials, principal.getPassword());
+
 
         if (validated) {
             if (log.isDebugEnabled())

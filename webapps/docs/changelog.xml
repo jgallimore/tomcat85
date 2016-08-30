@@ -84,6 +84,9 @@
         align it with the default cookie parser. Document the impact system properties have on
         cookie name validation. (mark)
       </fix>
+      <fix>
+        Make timing attacks against the Realm implementations harder. (schultz)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
