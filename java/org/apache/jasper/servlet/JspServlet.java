@@ -71,8 +71,8 @@ public class JspServlet extends HttpServlet implements PeriodicEventListener {
     private ServletConfig config;
     private transient Options options;
     private transient JspRuntimeContext rctxt;
-    //jspFile for a jsp configured explicitly as a servlet, in environments where this configuration is
-    //translated into an init-param for this servlet.
+    // jspFile for a jsp configured explicitly as a servlet, in environments where this
+    // configuration is translated into an init-param for this servlet.
     private String jspFile;
 
 
@@ -88,8 +88,17 @@ public class JspServlet extends HttpServlet implements PeriodicEventListener {
 
         // Initialize the JSP Runtime Context
         // Check for a custom Options implementation
+<<<<<<< HEAD
         String engineOptionsName =
             config.getInitParameter("engineOptionsClass");
+=======
+        String engineOptionsName = config.getInitParameter("engineOptionsClass");
+        if (Constants.IS_SECURITY_ENABLED && engineOptionsName != null) {
+            log.info(Localizer.getMessage(
+                    "jsp.info.ignoreSetting", "engineOptionsClass", engineOptionsName));
+            engineOptionsName = null;
+        }
+>>>>>>> f97769f50... Ignore some JSP options when running under a SecurityManager
         if (engineOptionsName != null) {
             // Instantiate the indicated Options implementation
             try {
