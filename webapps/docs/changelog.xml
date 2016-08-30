@@ -143,6 +143,10 @@
         <bug>59654</bug>: Improve error message when attempting to use a TLD
         file from an invalid location. Patch provided by Huxing Zhang. (markt)
       </fix>
+      <fix>
+        Ignore <code>engineOptionsClass</code> and <code>scratchdir</code> when
+        running under a security manager. (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="WebSocket">
