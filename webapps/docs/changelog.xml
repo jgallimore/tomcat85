@@ -89,6 +89,11 @@
         that the global resource is only visible via the
         <code>ResourceLinkFactory</code> when it is meant to be. (markt)
       </add>
+      <fix>
+        Improve the access checks for linked global resources to handle the case
+        where the current class loader is a child of the web application class
+        loader. (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
