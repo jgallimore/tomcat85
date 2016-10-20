@@ -126,6 +126,11 @@
       <fix>
         Fix a cause of multiple attempts to close the same socket. (markt)
       </fix>
+      <fix>
+        <bug>60232</bug>: When processing headers for an HTTP/2 stream, ensure
+        that the read buffer is large enough for the header being processed.
+        (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Jasper">
