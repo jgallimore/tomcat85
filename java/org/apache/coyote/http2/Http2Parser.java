@@ -172,7 +172,7 @@ class Http2Parser {
                 swallow(streamId, padLength, true);
             }
             if (endOfStream) {
-                output.receiveEndOfStream(streamId);
+                output.receivedEndOfStream(streamId);
             }
         } else {
             synchronized (dest) {
@@ -183,7 +183,7 @@ class Http2Parser {
                     swallow(streamId, padLength, true);
                 }
                 if (endOfStream) {
-                    output.receiveEndOfStream(streamId);
+                    output.receivedEndOfStream(streamId);
                 }
                 output.endRequestBodyFrame(streamId);
             }
@@ -241,24 +241,16 @@ class Http2Parser {
             payloadSize -= padLength;
         }
 
-        boolean endOfHeaders = Flags.isEndOfHeaders(flags);
-
-        readHeaderBlock(payloadSize, endOfHeaders);
+        readHeaderPayload(payloadSize);
 
         swallow(streamId, padLength, true);
 
-        if (endOfHeaders) {
-            output.headersEnd(streamId);
+        headersEndStream = Flags.isEndOfStream(flags);
+
+        if (Flags.isEndOfHeaders(flags)) {
+            onHeadersComplete(streamId);
         } else {
             headersCurrentStream = streamId;
-        }
-
-        if (Flags.isEndOfStream(flags)) {
-            if (headersCurrentStream == -1) {
-                output.receiveEndOfStream(streamId);
-            } else {
-                headersEndStream = true;
-            }
         }
     }
 
@@ -377,22 +369,16 @@ class Http2Parser {
                     Integer.toString(streamId)), Http2Error.PROTOCOL_ERROR);
         }
 
-        boolean endOfHeaders = Flags.isEndOfHeaders(flags);
-        readHeaderBlock(payloadSize, endOfHeaders);
+        readHeaderPayload(payloadSize);
 
-        if (endOfHeaders) {
-            output.headersEnd(streamId);
+        if (Flags.isEndOfHeaders(flags)) {
+            onHeadersComplete(streamId);
             headersCurrentStream = -1;
-            if (headersEndStream) {
-                output.receiveEndOfStream(streamId);
-                headersEndStream = false;
-            }
         }
     }
 
 
-    private void readHeaderBlock(int payloadSize, boolean endOfHeaders)
-            throws Http2Exception, IOException {
+    private void readHeaderPayload(int payloadSize) throws Http2Exception, IOException {
 
         while (payloadSize > 0) {
             int toRead = Math.min(headerReadBuffer.remaining(), payloadSize);
@@ -412,10 +398,28 @@ class Http2Parser {
             payloadSize -= toRead;
         }
 
-        if (headerReadBuffer.position() > 0 && endOfHeaders) {
+        hpackDecoder.getHeaderEmitter().validateHeaders();
+    }
+
+
+    private void onHeadersComplete(int streamId) throws Http2Exception {
+        // Any left over data is a compression error
+        if (headerReadBuffer.position() > 0) {
             throw new ConnectionException(
                     sm.getString("http2Parser.processFrameHeaders.decodingDataLeft"),
                     Http2Error.COMPRESSION_ERROR);
+        }
+
+        output.headersEnd(streamId);
+
+        if (headersEndStream) {
+            output.receivedEndOfStream(streamId);
+            headersEndStream = false;
+        }
+
+        // Reset size for new request if the buffer was previously expanded
+        if (headerReadBuffer.capacity() > Constants.DEFAULT_HEADER_READ_BUFFER_SIZE) {
+            headerReadBuffer = ByteBuffer.allocate(Constants.DEFAULT_HEADER_READ_BUFFER_SIZE);
         }
     }
 
@@ -575,7 +579,7 @@ class Http2Parser {
         // Data frames
         ByteBuffer startRequestBodyFrame(int streamId, int payloadSize) throws Http2Exception;
         void endRequestBodyFrame(int streamId) throws Http2Exception;
-        void receiveEndOfStream(int streamId) throws ConnectionException;
+        void receivedEndOfStream(int streamId) throws ConnectionException;
         void swallowedPadding(int streamId, int paddingLength) throws ConnectionException, IOException;
 
         // Header frames
