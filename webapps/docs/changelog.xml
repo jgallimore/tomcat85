@@ -138,6 +138,10 @@
       <fix>
         Make timing attacks against the Realm implementations harder. (schultz)
       </fix>
+      <add>
+        Add additional checks for valid characters to the HTTP request line
+        parsing so invalid request lines are rejected sooner. (markt)
+      </add>
     </changelog>
   </subsection>
   <subsection name="Coyote">
