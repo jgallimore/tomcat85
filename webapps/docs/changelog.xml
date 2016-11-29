@@ -115,7 +115,7 @@
         Modify the handling of read/write timeouts so that the appropriate error
         handling (<code>ReadListener.onError()</code>,
         <code>WriteListener.onError()</code> or
-        <code>AsyncListener.onError()</code>) is called. (markt)
+        <code>AsycnListener.onError()</code>) is called. (markt)
       </fix>
       <fix>
        If an async dispatch results in the completion of request processing,
