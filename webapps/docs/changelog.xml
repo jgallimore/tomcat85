@@ -143,6 +143,10 @@
         <bug>59654</bug>: Improve error message when attempting to use a TLD
         file from an invalid location. Patch provided by Huxing Zhang. (markt)
       </fix>
+      <fix>
+        <bug>60409</bug>: When unable to complete sendfile request, ensure the
+        Processor will be added to the cache only once. (markt/violetagg)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="WebSocket">
