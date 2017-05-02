@@ -84,6 +84,11 @@
         align it with the default cookie parser. Document the impact system properties have on
         cookie name validation. (mark)
       </fix>
+      <fix>
+        Use a more reliable mechanism for the <code>DefaultServlet</code> when
+        determining if the current request is for custom error page or not.
+        (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
