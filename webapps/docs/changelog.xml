@@ -118,6 +118,10 @@
         <code>AsycnListener.onError()</code>) is called. (markt)
       </fix>
       <fix>
+        <bug>61120</bug>: Do not ignore path parameters when processing HTTP/2
+        requests. (markt)
+      </fix>
+      <fix>
        If an async dispatch results in the completion of request processing,
        ensure that any remaining request body is swallowed before starting the
        processing of the next request else the remaining body may be read as the
