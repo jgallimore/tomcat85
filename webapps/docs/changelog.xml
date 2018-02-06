@@ -84,6 +84,11 @@
         align it with the default cookie parser. Document the impact system properties have on
         cookie name validation. (mark)
       </fix>
+      <fix>
+        Process all <code>ServletSecurity</code> annotations at web application
+        start rather than at servlet load time to ensure constraints are applied
+        consistently. (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
