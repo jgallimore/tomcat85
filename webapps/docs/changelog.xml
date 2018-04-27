@@ -84,6 +84,10 @@
         align it with the default cookie parser. Document the impact system properties have on
         cookie name validation. (mark)
       </fix>
+      <fix>
+        Improve handing of overflow in the UTF-8 decoder with supplementary
+        characters. (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
