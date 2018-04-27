@@ -115,7 +115,7 @@
         Modify the handling of read/write timeouts so that the appropriate error
         handling (<code>ReadListener.onError()</code>,
         <code>WriteListener.onError()</code> or
-        <code>AsycnListener.onError()</code>) is called. (markt)
+        <code>AsyncListener.onError()</code>) is called. (markt)
       </fix>
       <fix>
        If an async dispatch results in the completion of request processing,
@@ -194,7 +194,7 @@
     </changelog>
   </subsection>
 </section>
-<section name="Tomcat 8.5.2" rtext="2016-05-16">
+<section name="Tomcat 8.5.2 (markt)" rtext="2016-05-16">
   <subsection name="Catalina">
     <changelog>
       <fix>
@@ -204,7 +204,7 @@
     </changelog>
   </subsection>
 </section>
-<section name="Tomcat 8.5.1" rtext="not released">
+<section name="Tomcat 8.5.1 (markt)" rtext="not released">
   <subsection name="Catalina">
     <changelog>
       <fix>
@@ -413,7 +413,7 @@
         (markt)
       </fix>
       <fix>
-        Work around <a herf="https://github.com/openssl/openssl/issues/188">a
+        Work around <a href="https://github.com/openssl/openssl/issues/188">a
         known issue in OpenSSL</a> that does not permit the TLS handshake to be
         failed if the ALPN negotiation fails. (markt)
       </fix>
@@ -590,7 +590,7 @@
     </changelog>
   </subsection>
 </section>
-<section name="Tomcat 8.5.0" rtext="2016-03-24">
+<section name="Tomcat 8.5.0 (markt)" rtext="2016-03-24">
   <subsection name="General">
     <changelog>
       <update>
