@@ -44,6 +44,16 @@
   They eventually become mixed with the numbered issues. (I.e., numbered
   issues do not "pop up" wrt. others).
 -->
+<section name="Tomcat 8.5.31-TT (markt)">
+  <subsection name="Catalina">
+    <changelog>
+      <fix>
+        <bug>62343</bug>: Make CORS filter defaults more secure. This is the fix
+        for CVE-2018-8014. (markt)
+      </fix>
+    </changelog>
+  </subsection>
+</section>
 <section name="Tomcat 8.5.31 (markt)">
   <subsection name="Catalina">
     <changelog>
