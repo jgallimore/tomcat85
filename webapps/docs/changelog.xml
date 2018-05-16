@@ -84,6 +84,10 @@
         align it with the default cookie parser. Document the impact system properties have on
         cookie name validation. (mark)
       </fix>
+      <fix>
+        <bug>62343</bug>: Make CORS filter defaults more secure. This is the fix
+        for CVE-2018-8014. (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
