@@ -23,14 +23,12 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.coyote.AbstractProcessor;
 import org.apache.coyote.ActionCode;
-import org.apache.coyote.AsyncContextCallback;
 import org.apache.coyote.ErrorState;
 import org.apache.coyote.Request;
 import org.apache.coyote.RequestInfo;
@@ -58,10 +56,9 @@ import org.apache.tomcat.util.http.MimeHeaders;
 import org.apache.tomcat.util.log.UserDataHelper;
 import org.apache.tomcat.util.net.AbstractEndpoint;
 import org.apache.tomcat.util.net.AbstractEndpoint.Handler.SocketState;
-import org.apache.tomcat.util.net.DispatchType;
 import org.apache.tomcat.util.net.SSLSupport;
 import org.apache.tomcat.util.net.SendfileDataBase;
-import org.apache.tomcat.util.net.SocketEvent;
+import org.apache.tomcat.util.net.SendfileState;
 import org.apache.tomcat.util.net.SocketWrapperBase;
 import org.apache.tomcat.util.res.StringManager;
 
@@ -183,6 +180,8 @@ public class Http11Processor extends AbstractProcessor {
 
     /**
      * List of MIMES for which compression may be enabled.
+     * Note: This is not spelled correctly but can't be changed without breaking
+     *       compatibility
      */
     protected String[] compressableMimeTypes;
 
@@ -201,7 +200,7 @@ public class Http11Processor extends AbstractProcessor {
 
     /*
      * Should application provider values for the HTTP Server header be removed.
-     * Note that if {@link #server} is set, any application provided vale will
+     * Note that if {@link #server} is set, any application provided value will
      * be over-ridden.
      */
     private boolean serverRemoveAppProvidedValues = false;
@@ -320,15 +319,27 @@ public class Http11Processor extends AbstractProcessor {
 
 
     /**
+     * @param compressibleMimeTypes See
+     *        {@link Http11Processor#setCompressibleMimeTypes(String[])}
+     * @deprecated Use
+     *             {@link Http11Processor#setCompressibleMimeTypes(String[])}
+     */
+    @Deprecated
+    public void setCompressableMimeTypes(String[] compressibleMimeTypes) {
+        setCompressibleMimeTypes(compressibleMimeTypes);
+    }
+
+
+    /**
      * Set compressible mime-type list (this method is best when used with
      * a large number of connectors, where it would be better to have all of
      * them referenced a single array).
      *
-     * @param compressableMimeTypes MIME types for which compression should be
+     * @param compressibleMimeTypes MIME types for which compression should be
      *                              enabled
      */
-    public void setCompressableMimeTypes(String[] compressableMimeTypes) {
-        this.compressableMimeTypes = compressableMimeTypes;
+    public void setCompressibleMimeTypes(String[] compressibleMimeTypes) {
+        this.compressableMimeTypes = compressibleMimeTypes;
     }
 
 
@@ -494,7 +505,7 @@ public class Http11Processor extends AbstractProcessor {
     /**
      * Check if the resource could be compressed, if the client supports it.
      */
-    private boolean isCompressable() {
+    private boolean isCompressible() {
 
         // Check if content is not already gzipped
         MessageBytes contentEncodingMB =
@@ -516,8 +527,7 @@ public class Http11Processor extends AbstractProcessor {
             || (contentLength > compressionMinSize)) {
             // Check for compatible MIME-TYPE
             if (compressableMimeTypes != null) {
-                return (startsWithStringArray(compressableMimeTypes,
-                                              response.getContentType()));
+                return (startsWithStringArray(compressableMimeTypes, response.getContentType()));
             }
         }
 
@@ -642,329 +652,6 @@ public class Http11Processor extends AbstractProcessor {
                 log.debug(sm.getString("http11processor.request.prepare") +
                           " Unsupported transfer encoding [" + encodingName + "]");
             }
-        }
-    }
-
-
-    @Override
-    public final void action(ActionCode actionCode, Object param) {
-        switch (actionCode) {
-        // 'Normal' servlet support
-        case COMMIT: {
-            if (!response.isCommitted()) {
-                try {
-                    // Validate and write response headers
-                    prepareResponse();
-                    outputBuffer.commit();
-                } catch (IOException e) {
-                    setErrorState(ErrorState.CLOSE_CONNECTION_NOW, e);
-                }
-            }
-            break;
-        }
-        case CLOSE: {
-            action(ActionCode.COMMIT, null);
-            try {
-                outputBuffer.endRequest();
-            } catch (IOException e) {
-                setErrorState(ErrorState.CLOSE_CONNECTION_NOW, e);
-            }
-            break;
-        }
-        case ACK: {
-            // Acknowledge request
-            // Send a 100 status back if it makes sense (response not committed
-            // yet, and client specified an expectation for 100-continue)
-            if (!response.isCommitted() && request.hasExpectation()) {
-                inputBuffer.setSwallowInput(true);
-                try {
-                    outputBuffer.sendAck();
-                } catch (IOException e) {
-                    setErrorState(ErrorState.CLOSE_CONNECTION_NOW, e);
-                }
-            }
-            break;
-        }
-        case CLIENT_FLUSH: {
-            action(ActionCode.COMMIT, null);
-            try {
-                outputBuffer.flush();
-            } catch (IOException e) {
-                setErrorState(ErrorState.CLOSE_CONNECTION_NOW, e);
-                response.setErrorException(e);
-            }
-            break;
-        }
-        case AVAILABLE: {
-            request.setAvailable(inputBuffer.available(Boolean.TRUE.equals(param)));
-            break;
-        }
-        case REQ_SET_BODY_REPLAY: {
-            ByteChunk body = (ByteChunk) param;
-
-            InputFilter savedBody = new SavedRequestInputFilter(body);
-            savedBody.setRequest(request);
-
-            Http11InputBuffer internalBuffer = (Http11InputBuffer) request.getInputBuffer();
-            internalBuffer.addActiveFilter(savedBody);
-            break;
-        }
-        case RESET: {
-            // Note: This must be called before the response is committed
-            outputBuffer.reset();
-            break;
-        }
-
-        // Error handling
-        case IS_ERROR: {
-            ((AtomicBoolean) param).set(getErrorState().isError());
-            break;
-        }
-        case CLOSE_NOW: {
-            // Block further output
-            outputBuffer.finished = true;
-            setErrorState(ErrorState.CLOSE_NOW, null);
-            break;
-        }
-        case DISABLE_SWALLOW_INPUT: {
-            // Do not swallow request input and make sure we are closing the
-            // connection
-            setErrorState(ErrorState.CLOSE_CLEAN, null);
-            inputBuffer.setSwallowInput(false);
-            break;
-        }
-
-        // Request attribute support
-        case REQ_HOST_ADDR_ATTRIBUTE: {
-            if (socketWrapper == null) {
-                request.remoteAddr().recycle();
-            } else {
-                request.remoteAddr().setString(socketWrapper.getRemoteAddr());
-            }
-            break;
-        }
-        case REQ_HOST_ATTRIBUTE: {
-            if (socketWrapper == null) {
-                request.remoteHost().recycle();
-            } else {
-                request.remoteHost().setString(socketWrapper.getRemoteHost());
-            }
-            break;
-        }
-        case REQ_LOCALPORT_ATTRIBUTE: {
-            if (socketWrapper == null) {
-                request.setLocalPort(0);
-            } else {
-                request.setLocalPort(socketWrapper.getLocalPort());
-            }
-            break;
-        }
-        case REQ_LOCAL_ADDR_ATTRIBUTE: {
-            if (socketWrapper == null) {
-                request.localAddr().recycle();
-            } else {
-                request.localAddr().setString(socketWrapper.getLocalAddr());
-            }
-            break;
-        }
-        case REQ_LOCAL_NAME_ATTRIBUTE: {
-            if (socketWrapper == null) {
-                request.localName().recycle();
-            } else {
-                request.localName().setString(socketWrapper.getLocalName());
-            }
-            break;
-        }
-        case REQ_REMOTEPORT_ATTRIBUTE: {
-            if (socketWrapper == null) {
-                request.setRemotePort(0);
-            } else {
-                request.setRemotePort(socketWrapper.getRemotePort());
-            }
-            break;
-        }
-
-        // SSL request attribute support
-        case REQ_SSL_ATTRIBUTE: {
-            try {
-                if (sslSupport != null) {
-                    Object sslO = sslSupport.getCipherSuite();
-                    if (sslO != null) {
-                        request.setAttribute
-                            (SSLSupport.CIPHER_SUITE_KEY, sslO);
-                    }
-                    sslO = sslSupport.getPeerCertificateChain();
-                    if (sslO != null) {
-                        request.setAttribute
-                            (SSLSupport.CERTIFICATE_KEY, sslO);
-                    }
-                    sslO = sslSupport.getKeySize();
-                    if (sslO != null) {
-                        request.setAttribute
-                            (SSLSupport.KEY_SIZE_KEY, sslO);
-                    }
-                    sslO = sslSupport.getSessionId();
-                    if (sslO != null) {
-                        request.setAttribute
-                            (SSLSupport.SESSION_ID_KEY, sslO);
-                    }
-                    sslO = sslSupport.getProtocol();
-                    if (sslO != null) {
-                        request.setAttribute
-                            (SSLSupport.PROTOCOL_VERSION_KEY, sslO);
-                    }
-                    request.setAttribute(SSLSupport.SESSION_MGR, sslSupport);
-                }
-            } catch (Exception e) {
-                log.warn(sm.getString("http11processor.socket.ssl"), e);
-            }
-            break;
-        }
-        case REQ_SSL_CERTIFICATE: {
-            if (sslSupport != null) {
-                // Consume and buffer the request body, so that it does not
-                // interfere with the client's handshake messages
-                InputFilter[] inputFilters = inputBuffer.getFilters();
-                ((BufferedInputFilter) inputFilters[Constants.BUFFERED_FILTER]).setLimit(
-                        maxSavePostSize);
-                inputBuffer.addActiveFilter(inputFilters[Constants.BUFFERED_FILTER]);
-
-                try {
-                    socketWrapper.doClientAuth(sslSupport);
-                    Object sslO = sslSupport.getPeerCertificateChain();
-                    if (sslO != null) {
-                        request.setAttribute(SSLSupport.CERTIFICATE_KEY, sslO);
-                    }
-                } catch (IOException ioe) {
-                    log.warn(sm.getString("http11processor.socket.ssl"), ioe);
-                }
-            }
-            break;
-        }
-
-        // Servlet 3.0 asynchronous support
-        case ASYNC_START: {
-            asyncStateMachine.asyncStart((AsyncContextCallback) param);
-            break;
-        }
-        case ASYNC_COMPLETE: {
-            clearDispatches();
-            if (asyncStateMachine.asyncComplete()) {
-                socketWrapper.processSocket(SocketEvent.OPEN_READ, true);
-            }
-            break;
-        }
-        case ASYNC_DISPATCH: {
-            if (asyncStateMachine.asyncDispatch()) {
-                socketWrapper.processSocket(SocketEvent.OPEN_READ, true);
-            }
-            break;
-        }
-        case ASYNC_DISPATCHED: {
-            asyncStateMachine.asyncDispatched();
-            break;
-        }
-        case ASYNC_ERROR: {
-            asyncStateMachine.asyncError();
-            break;
-        }
-        case ASYNC_IS_ASYNC: {
-            ((AtomicBoolean) param).set(asyncStateMachine.isAsync());
-            break;
-        }
-        case ASYNC_IS_COMPLETING: {
-            ((AtomicBoolean) param).set(asyncStateMachine.isCompleting());
-            break;
-        }
-        case ASYNC_IS_DISPATCHING: {
-            ((AtomicBoolean) param).set(asyncStateMachine.isAsyncDispatching());
-            break;
-        }
-        case ASYNC_IS_ERROR: {
-            ((AtomicBoolean) param).set(asyncStateMachine.isAsyncError());
-            break;
-        }
-        case ASYNC_IS_STARTED: {
-            ((AtomicBoolean) param).set(asyncStateMachine.isAsyncStarted());
-            break;
-        }
-        case ASYNC_IS_TIMINGOUT: {
-            ((AtomicBoolean) param).set(asyncStateMachine.isAsyncTimingOut());
-            break;
-        }
-        case ASYNC_RUN: {
-            asyncStateMachine.asyncRun((Runnable) param);
-            break;
-        }
-        case ASYNC_SETTIMEOUT: {
-            if (param == null) {
-                return;
-            }
-            long timeout = ((Long) param).longValue();
-            setAsyncTimeout(timeout);
-            break;
-        }
-        case ASYNC_TIMEOUT: {
-            AtomicBoolean result = (AtomicBoolean) param;
-            result.set(asyncStateMachine.asyncTimeout());
-            break;
-        }
-        case ASYNC_POST_PROCESS: {
-            asyncStateMachine.asyncPostProcess();
-            break;
-        }
-
-        // Servlet 3.1 non-blocking I/O
-        case REQUEST_BODY_FULLY_READ: {
-            AtomicBoolean result = (AtomicBoolean) param;
-            result.set(inputBuffer.isFinished());
-            break;
-        }
-        case NB_READ_INTEREST: {
-            socketWrapper.registerReadInterest();
-            break;
-        }
-        case NB_WRITE_INTEREST: {
-            AtomicBoolean isReady = (AtomicBoolean)param;
-            isReady.set(outputBuffer.isReady());
-            break;
-        }
-        case DISPATCH_READ: {
-            addDispatch(DispatchType.NON_BLOCKING_READ);
-            break;
-        }
-        case DISPATCH_WRITE: {
-            addDispatch(DispatchType.NON_BLOCKING_WRITE);
-            break;
-        }
-        case DISPATCH_EXECUTE: {
-            SocketWrapperBase<?> wrapper = socketWrapper;
-            if (wrapper != null) {
-                wrapper.executeNonBlockingDispatches(getIteratorAndClearDispatches());
-            }
-            break;
-        }
-
-        // Servlet 3.1 HTTP Upgrade
-        case UPGRADE: {
-            upgradeToken = (UpgradeToken) param;
-            // Stop further HTTP output
-            outputBuffer.finished = true;
-            break;
-        }
-
-        // Servlet 4.0 Push requests
-        case IS_PUSH_SUPPORTED: {
-            // HTTP2 connections only. Unsupported for HTTP/1.x
-            AtomicBoolean result = (AtomicBoolean) param;
-            result.set(false);
-            break;
-        }
-        case PUSH_REQUEST: {
-            // HTTP2 connections only. Unsupported for AJP.
-            throw new UnsupportedOperationException(
-                    sm.getString("http11processor.pushrequest.notsupported"));
-        }
         }
     }
 
@@ -1120,6 +807,7 @@ public class Http11Processor extends AbstractProcessor {
                 } catch (InterruptedIOException e) {
                     setErrorState(ErrorState.CLOSE_CONNECTION_NOW, e);
                 } catch (HeadersTooLargeException e) {
+                    log.error(sm.getString("http11processor.request.process"), e);
                     // The response should not have been committed but check it
                     // anyway to be safe
                     if (response.isCommitted()) {
@@ -1438,7 +1126,8 @@ public class Http11Processor extends AbstractProcessor {
      * When committing the response, we have to validate the set of headers, as
      * well as setup the response filters.
      */
-    private void prepareResponse() {
+    @Override
+    protected final void prepareResponse() throws IOException {
 
         boolean entityBody = true;
         contentDelimitation = false;
@@ -1447,8 +1136,8 @@ public class Http11Processor extends AbstractProcessor {
 
         if (http09 == true) {
             // HTTP/0.9
-            outputBuffer.addActiveFilter
-                (outputFilters[Constants.IDENTITY_FILTER]);
+            outputBuffer.addActiveFilter(outputFilters[Constants.IDENTITY_FILTER]);
+            outputBuffer.commit();
             return;
         }
 
@@ -1477,11 +1166,11 @@ public class Http11Processor extends AbstractProcessor {
         }
 
         // Check for compression
-        boolean isCompressable = false;
+        boolean isCompressible = false;
         boolean useCompression = false;
         if (entityBody && (compressionLevel > 0) && !sendingWithSendfile) {
-            isCompressable = isCompressable();
-            if (isCompressable) {
+            isCompressible = isCompressible();
+            if (isCompressible) {
                 useCompression = useCompression();
             }
             // Change content-length to -1 to force chunking
@@ -1534,7 +1223,7 @@ public class Http11Processor extends AbstractProcessor {
             headers.setValue("Content-Encoding").setString("gzip");
         }
         // If it might be compressed, set the Vary header
-        if (isCompressable) {
+        if (isCompressible) {
             // Make Proxies happy via Vary (from mod_deflate)
             MessageBytes vary = headers.getValue("Vary");
             if (vary == null) {
@@ -1583,9 +1272,6 @@ public class Http11Processor extends AbstractProcessor {
             headers.addValue(Constants.CONNECTION).setString(Constants.KEEPALIVE);
         }
 
-        // Build the response header
-        outputBuffer.sendStatus();
-
         // Add server header
         if (server == null) {
             if (serverRemoveAppProvidedValues) {
@@ -1596,12 +1282,24 @@ public class Http11Processor extends AbstractProcessor {
             headers.setValue("Server").setString(server);
         }
 
-        int size = headers.size();
-        for (int i = 0; i < size; i++) {
-            outputBuffer.sendHeader(headers.getName(i), headers.getValue(i));
-        }
-        outputBuffer.endHeaders();
+        // Build the response header
+        try {
+            outputBuffer.sendStatus();
 
+            int size = headers.size();
+            for (int i = 0; i < size; i++) {
+                outputBuffer.sendHeader(headers.getName(i), headers.getValue(i));
+            }
+            outputBuffer.endHeaders();
+        } catch (Throwable t) {
+            ExceptionUtils.handleThrowable(t);
+            // If something goes wrong, reset the header buffer so the error
+            // response can be written instead.
+            outputBuffer.resetHeaderBuffer();
+            throw t;
+        }
+
+        outputBuffer.commit();
     }
 
     private static boolean isConnectionClose(MimeHeaders headers) {
@@ -1668,13 +1366,6 @@ public class Http11Processor extends AbstractProcessor {
         }
 
         if (colonPos < 0) {
-            if (!endpoint.isSSLEnabled()) {
-                // 80 - Default HTTP port
-                request.setServerPort(80);
-            } else {
-                // 443 - Default HTTPS port
-                request.setServerPort(443);
-            }
             request.serverName().setChars(hostNameC, 0, valueL);
         } else {
             request.serverName().setChars(hostNameC, 0, colonPos);
@@ -1736,19 +1427,6 @@ public class Http11Processor extends AbstractProcessor {
 
 
     @Override
-    public boolean isUpgrade() {
-        return upgradeToken != null;
-    }
-
-
-
-    @Override
-    public UpgradeToken getUpgradeToken() {
-        return upgradeToken;
-    }
-
-
-    @Override
     protected Log getLog() {
         return log;
     }
@@ -1791,7 +1469,7 @@ public class Http11Processor extends AbstractProcessor {
         if (getErrorState().isIoAllowed()) {
             try {
                 action(ActionCode.COMMIT, null);
-                outputBuffer.endRequest();
+                outputBuffer.finishResponse();
             } catch (IOException e) {
                 setErrorState(ErrorState.CLOSE_CONNECTION_NOW, e);
             } catch (Throwable t) {
@@ -1800,6 +1478,129 @@ public class Http11Processor extends AbstractProcessor {
                 log.error(sm.getString("http11processor.response.finish"), t);
             }
         }
+    }
+
+
+    @Override
+    protected final void finishResponse() throws IOException {
+        outputBuffer.finishResponse();
+    }
+
+
+    @Override
+    protected final void ack() {
+        // Acknowledge request
+        // Send a 100 status back if it makes sense (response not committed
+        // yet, and client specified an expectation for 100-continue)
+        if (!response.isCommitted() && request.hasExpectation()) {
+            inputBuffer.setSwallowInput(true);
+            try {
+                outputBuffer.sendAck();
+            } catch (IOException e) {
+                setErrorState(ErrorState.CLOSE_CONNECTION_NOW, e);
+            }
+        }
+    }
+
+
+    @Override
+    protected final void flush() throws IOException {
+        outputBuffer.flush();
+    }
+
+
+    @Override
+    protected final int available(boolean doRead) {
+        return inputBuffer.available(doRead);
+    }
+
+
+    @Override
+    protected final void setRequestBody(ByteChunk body) {
+        InputFilter savedBody = new SavedRequestInputFilter(body);
+        savedBody.setRequest(request);
+
+        Http11InputBuffer internalBuffer = (Http11InputBuffer) request.getInputBuffer();
+        internalBuffer.addActiveFilter(savedBody);
+    }
+
+
+    @Override
+    protected final void setSwallowResponse() {
+        outputBuffer.responseFinished = true;
+    }
+
+
+    @Override
+    protected final void disableSwallowRequest() {
+        inputBuffer.setSwallowInput(false);
+    }
+
+
+    @Override
+    protected final void sslReHandShake() {
+        if (sslSupport != null) {
+            // Consume and buffer the request body, so that it does not
+            // interfere with the client's handshake messages
+            InputFilter[] inputFilters = inputBuffer.getFilters();
+            ((BufferedInputFilter) inputFilters[Constants.BUFFERED_FILTER]).setLimit(
+                    maxSavePostSize);
+            inputBuffer.addActiveFilter(inputFilters[Constants.BUFFERED_FILTER]);
+
+            try {
+                socketWrapper.doClientAuth(sslSupport);
+                Object sslO = sslSupport.getPeerCertificateChain();
+                if (sslO != null) {
+                    request.setAttribute(SSLSupport.CERTIFICATE_KEY, sslO);
+                }
+            } catch (IOException ioe) {
+                log.warn(sm.getString("http11processor.socket.ssl"), ioe);
+            }
+        }
+    }
+
+
+    @Override
+    protected final boolean isRequestBodyFullyRead() {
+        return inputBuffer.isFinished();
+    }
+
+
+    @Override
+    protected final void registerReadInterest() {
+        socketWrapper.registerReadInterest();
+    }
+
+
+    @Override
+    protected final boolean isReady() {
+        return outputBuffer.isReady();
+    }
+
+
+    @Override
+    public UpgradeToken getUpgradeToken() {
+        return upgradeToken;
+    }
+
+
+    @Override
+    protected final void doHttpUpgrade(UpgradeToken upgradeToken) {
+        this.upgradeToken = upgradeToken;
+        // Stop further HTTP output
+        outputBuffer.responseFinished = true;
+    }
+
+
+    @Override
+    public ByteBuffer getLeftoverInput() {
+        return inputBuffer.getLeftover();
+    }
+
+
+    @Override
+    public boolean isUpgrade() {
+        return upgradeToken != null;
     }
 
 
@@ -1844,12 +1645,6 @@ public class Http11Processor extends AbstractProcessor {
         upgradeToken = null;
         socketWrapper = null;
         sendfileData = null;
-    }
-
-
-    @Override
-    public ByteBuffer getLeftoverInput() {
-        return inputBuffer.getLeftover();
     }
 
 

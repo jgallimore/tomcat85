@@ -166,8 +166,8 @@ public class TestCorsFilter {
     }
 
     /*
-     * Tests the prsence of the origin (and not '*') in the response, when
-     * supports credentials is enabled alongwith any origin, '*'.
+     * Tests the that supports credentials may not be enabled with any origin,
+     * '*'.
      *
      * @throws IOException
      * @throws ServletException

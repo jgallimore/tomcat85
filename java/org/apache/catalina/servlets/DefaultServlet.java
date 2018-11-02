@@ -404,6 +404,18 @@ public class DefaultServlet extends HttpServlet {
     }
 
 
+    @Override
+    protected void service(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+
+        if (req.getDispatcherType() == DispatcherType.ERROR) {
+            doGet(req, resp);
+        } else {
+            super.service(req, resp);
+        }
+    }
+
+
     /**
      * Process a GET request for the specified resource.
      *
@@ -791,7 +803,7 @@ public class DefaultServlet extends HttpServlet {
             return;
         }
 
-        boolean isError = response.getStatus() >= HttpServletResponse.SC_BAD_REQUEST;
+        boolean isError = DispatcherType.ERROR == request.getDispatcherType();
 
         boolean included = false;
         // Check if the conditions specified in the optional If headers are
