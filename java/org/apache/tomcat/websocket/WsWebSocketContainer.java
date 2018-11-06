@@ -321,8 +321,7 @@ public class WsWebSocketContainer implements WebSocketContainer, BackgroundProce
             // Regardless of whether a non-secure wrapper was created for a
             // proxy CONNECT, need to use TLS from this point on so wrap the
             // original AsynchronousSocketChannel
-            SSLEngine sslEngine = createSSLEngine(userProperties);
-                    clientEndpointConfiguration.getUserProperties());
+            SSLEngine sslEngine = createSSLEngine(clientEndpointConfiguration.getUserProperties(), host, port);
             channel = new AsyncChannelWrapperSecure(socketChannel, sslEngine);
         } else if (channel == null) {
             // Only need to wrap as this point if it wasn't wrapped to process a
