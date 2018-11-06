@@ -304,16 +304,6 @@ public abstract class RealmBase extends LifecycleMBeanBase implements Realm {
     @Override
     public Principal authenticate(String username, String credentials) {
 
-        String serverCredentials = getPassword(username);
-
-        if (credentials == null || serverCredentials == null) {
-            if (containerLog.isTraceEnabled()) {
-                containerLog.trace(sm.getString("realmBase.authenticateFailure",
-                                                username));
-            }
-            return null;
-        }
-
         // Look up the user's credentials
         String serverCredentials = getPassword(username);
 
