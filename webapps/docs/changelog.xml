@@ -106,6 +106,16 @@
         where the current class loader is a child of the web application class
         loader. (markt)
       </fix>
+      <fix>
+        Process all <code>ServletSecurity</code> annotations at web application
+        start rather than at servlet load time to ensure constraints are applied
+        consistently. (markt)
+      </fix>
+      <fix>
+        <bug>62104</bug>: Fix programmatic login regression as the
+        NonLoginAuthenticator has to be set for it to work (if no login method
+        is specified). (remm)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
