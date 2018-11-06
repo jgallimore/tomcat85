@@ -922,7 +922,7 @@ public abstract class Http2TestBase extends TomcatBaseTest {
     }
 
 
-    private static class SimpleServlet extends HttpServlet {
+    protected static class SimpleServlet extends HttpServlet {
 
         private static final long serialVersionUID = 1L;
 

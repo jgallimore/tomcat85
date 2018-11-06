@@ -161,7 +161,7 @@ public class TestSendFile extends TomcatBaseTest{
         Context ctx = tomcat.addContext("", TEMP_DIR);
         File file = generateFile(TEMP_DIR, "", EXPECTED_CONTENT_LENGTH);
         Tomcat.addServlet(ctx, "test", new Bug60409Servlet(file));
-        ctx.addServletMappingDecoded("/", "test");
+        ctx.addServletMapping("/", "test");
 
         tomcat.start();
 
