@@ -84,6 +84,24 @@
         align it with the default cookie parser. Document the impact system properties have on
         cookie name validation. (mark)
       </fix>
+      <fix>
+        Improve handing of overflow in the UTF-8 decoder with supplementary
+        characters. (markt)
+      </fix>
+      <fix>
+        <bug>62343</bug>: Make CORS filter defaults more secure. This is the fix
+        for CVE-2018-8014. (markt)
+      </fix>
+      <add>
+        When adding and removing <code>ResourceLink</code>s dynamically, ensure
+        that the global resource is only visible via the
+        <code>ResourceLinkFactory</code> when it is meant to be. (markt)
+      </add>
+      <fix>
+        Improve the access checks for linked global resources to handle the case
+        where the current class loader is a child of the web application class
+        loader. (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
@@ -118,6 +136,10 @@
         <code>AsycnListener.onError()</code>) is called. (markt)
       </fix>
       <fix>
+        <bug>61120</bug>: Do not ignore path parameters when processing HTTP/2
+        requests. (markt)
+      </fix>
+      <fix>
        If an async dispatch results in the completion of request processing,
        ensure that any remaining request body is swallowed before starting the
        processing of the next request else the remaining body may be read as the
@@ -125,6 +147,11 @@
       </fix>
       <fix>
         Fix a cause of multiple attempts to close the same socket. (markt)
+      </fix>
+      <fix>
+        <bug>60918</bug>: Fix sendfile processing error that could lead to
+        subsequent requests experiencing and <code>IllegalStateException</code>.
+        (markt)
       </fix>
       <fix>
         <bug>60232</bug>: When processing headers for an HTTP/2 stream, ensure
@@ -147,6 +174,14 @@
       <fix>
         <bug>59654</bug>: Improve error message when attempting to use a TLD
         file from an invalid location. Patch provided by Huxing Zhang. (markt)
+      </fix>
+      <fix>
+        Ignore <code>engineOptionsClass</code> and <code>scratchdir</code> when
+        running under a security manager. (markt)
+      </fix>
+      <fix>
+        <bug>60409</bug>: When unable to complete sendfile request, ensure the
+        Processor will be added to the cache only once. (markt/violetagg)
       </fix>
     </changelog>
   </subsection>
