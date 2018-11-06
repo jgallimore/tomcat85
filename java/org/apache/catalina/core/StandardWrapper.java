@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
 package org.apache.catalina.core;
 
 import java.io.PrintStream;
@@ -42,11 +40,9 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.ServletSecurityElement;
 import javax.servlet.SingleThreadModel;
 import javax.servlet.UnavailableException;
 import javax.servlet.annotation.MultipartConfig;
-import javax.servlet.annotation.ServletSecurity;
 
 import org.apache.catalina.Container;
 import org.apache.catalina.ContainerServlet;
@@ -255,8 +251,6 @@ public class StandardWrapper extends ContainerBase
      * Enabled
      */
     protected boolean enabled = true;
-
-    protected volatile boolean servletSecurityAnnotationScanRequired = false;
 
     private boolean overridable = false;
 
@@ -630,7 +624,7 @@ public class StandardWrapper extends ContainerBase
      */
     @Override
     public void setServletSecurityAnnotationScanRequired(boolean b) {
-        this.servletSecurityAnnotationScanRequired = b;
+        // NO-OP
     }
 
     // --------------------------------------------------------- Public Methods
@@ -1089,8 +1083,6 @@ public class StandardWrapper extends ContainerBase
                 }
             }
 
-            processServletSecurityAnnotation(servlet.getClass());
-
             // Special handling for ContainerServlet instances
             if ((servlet instanceof ContainerServlet) &&
                     (isContainerProvidedServlet(servletClass) ||
@@ -1133,40 +1125,9 @@ public class StandardWrapper extends ContainerBase
      */
     @Override
     public void servletSecurityAnnotationScan() throws ServletException {
-        if (getServlet() == null) {
-            Class<?> clazz = null;
-            try {
-                clazz = ((Context) getParent()).getLoader().getClassLoader().loadClass(
-                        getServletClass());
-                processServletSecurityAnnotation(clazz);
-            } catch (ClassNotFoundException e) {
-                // Safe to ignore. No class means no annotations to process
-            }
-        } else {
-            if (servletSecurityAnnotationScanRequired) {
-                processServletSecurityAnnotation(getServlet().getClass());
-            }
-        }
+        // NO-OP
     }
 
-    private void processServletSecurityAnnotation(Class<?> clazz) {
-        // Calling this twice isn't harmful so no syncs
-        servletSecurityAnnotationScanRequired = false;
-
-        Context ctxt = (Context) getParent();
-
-        if (ctxt.getIgnoreAnnotations()) {
-            return;
-        }
-
-        ServletSecurity secAnnotation =
-            clazz.getAnnotation(ServletSecurity.class);
-        if (secAnnotation != null) {
-            ctxt.addServletSecurity(
-                    new ApplicationServletRegistration(this, ctxt),
-                    new ServletSecurityElement(secAnnotation));
-        }
-    }
 
     private synchronized void initServlet(Servlet servlet)
             throws ServletException {

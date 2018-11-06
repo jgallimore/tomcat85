@@ -583,6 +583,7 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel> {
                         // since it won't have been counted down when the socket
                         // closed.
                         socket.socketWrapper.getEndpoint().countDownConnection();
+                        ((NioSocketWrapper) socket.socketWrapper).closed = true;
                     } else {
                         final NioSocketWrapper socketWrapper = (NioSocketWrapper) key.attachment();
                         if (socketWrapper != null) {
@@ -760,6 +761,7 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel> {
                 }
                 if (ka != null) {
                     countDownConnection();
+                    ka.closed = true;
                 }
             } catch (Throwable e) {
                 ExceptionUtils.handleThrowable(e);
@@ -888,7 +890,6 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel> {
                     // Setup the file channel
                     File f = new File(sd.fileName);
                     if (!f.exists()) {
-                        cancelledKey(sk);
                         return SendfileState.ERROR;
                     }
                     @SuppressWarnings("resource") // Closed when channel is closed
@@ -962,16 +963,12 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel> {
                 if (log.isDebugEnabled()) log.debug("Unable to complete sendfile request:", x);
                 if (!calledByProcessor && sc != null) {
                     close(sc, sk);
-                } else {
-                    cancelledKey(sk);
                 }
                 return SendfileState.ERROR;
             } catch (Throwable t) {
                 log.error("", t);
                 if (!calledByProcessor && sc != null) {
                     close(sc, sk);
-                } else {
-                    cancelledKey(sk);
                 }
                 return SendfileState.ERROR;
             }
@@ -1069,6 +1066,7 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel> {
         private volatile SendfileData sendfileData = null;
         private volatile long lastRead = System.currentTimeMillis();
         private volatile long lastWrite = lastRead;
+        private volatile boolean closed = false;
 
         public NioSocketWrapper(NioChannel channel, NioEndpoint endpoint) {
             super(channel, endpoint);
@@ -1188,7 +1186,7 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel> {
 
         @Override
         public boolean isClosed() {
-            return !getSocket().isOpen();
+            return closed || !getSocket().isOpen();
         }
 
 
