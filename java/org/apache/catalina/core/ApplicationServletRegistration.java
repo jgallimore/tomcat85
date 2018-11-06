@@ -44,6 +44,7 @@ public class ApplicationServletRegistration
 
     private final Wrapper wrapper;
     private final Context context;
+    private ServletSecurityElement constraint;
 
     public ApplicationServletRegistration(Wrapper wrapper,
             Context context) {
@@ -158,6 +159,7 @@ public class ApplicationServletRegistration
                     getName(), context.getName()));
         }
 
+        this.constraint = constraint;
         return context.addServletSecurity(this, constraint);
     }
 
@@ -191,6 +193,11 @@ public class ApplicationServletRegistration
         for (String urlPattern : urlPatterns) {
             context.addServletMapping(urlPattern, wrapper.getName());
         }
+
+        if (constraint != null) {
+            context.addServletSecurity(this, constraint);
+        }
+
         return Collections.emptySet();
     }
 
