@@ -249,17 +249,14 @@ public final class CorsFilter implements Filter {
 
         // Section 6.1.3
         // Add a single Access-Control-Allow-Origin header.
-        if (anyOriginAllowed && !supportsCredentials) {
-            // If resource doesn't support credentials and if any origin is
-            // allowed
-            // to make CORS request, return header with '*'.
+        if (anyOriginAllowed) {
+            // If any origin is allowed, return header with '*'.
             response.addHeader(
                     CorsFilter.RESPONSE_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN,
                     "*");
         } else {
-            // If the resource supports credentials add a single
-            // Access-Control-Allow-Origin header, with the value of the Origin
-            // header as value.
+            // Add a single Access-Control-Allow-Origin header, with the value
+            // of the Origin header as value.
             response.addHeader(
                     CorsFilter.RESPONSE_HEADER_ACCESS_CONTROL_ALLOW_ORIGIN,
                     origin);
@@ -772,6 +769,9 @@ public final class CorsFilter implements Filter {
                     .parseBoolean(supportsCredentials);
         }
 
+        if (this.supportsCredentials && this.anyOriginAllowed) {
+            throw new ServletException(sm.getString("corsFilter.invalidSupportsCredentials"));
+        }
         if (preflightMaxAge != null) {
             try {
                 if (!preflightMaxAge.isEmpty()) {
@@ -1072,7 +1072,7 @@ public final class CorsFilter implements Filter {
     /**
      * By default, all origins are allowed to make requests.
      */
-    public static final String DEFAULT_ALLOWED_ORIGINS = "*";
+    public static final String DEFAULT_ALLOWED_ORIGINS = "";
 
     /**
      * By default, following methods are supported: GET, POST, HEAD and OPTIONS.
@@ -1088,7 +1088,7 @@ public final class CorsFilter implements Filter {
     /**
      * By default, support credentials is turned on.
      */
-    public static final String DEFAULT_SUPPORTS_CREDENTIALS = "true";
+    public static final String DEFAULT_SUPPORTS_CREDENTIALS = "false";
 
     /**
      * By default, following headers are supported:
