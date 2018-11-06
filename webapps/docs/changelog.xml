@@ -170,6 +170,10 @@
         Ignore <code>engineOptionsClass</code> and <code>scratchdir</code> when
         running under a security manager. (markt)
       </fix>
+      <fix>
+        <bug>60409</bug>: When unable to complete sendfile request, ensure the
+        Processor will be added to the cache only once. (markt/violetagg)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="WebSocket">
