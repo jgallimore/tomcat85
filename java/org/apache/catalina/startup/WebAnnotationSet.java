@@ -143,13 +143,13 @@ public class WebAnnotationSet {
                  * Ref JSR 250, equivalent to the run-as element in
                  * the deployment descriptor
                  */
-                RunAs annotation = clazz.getAnnotation(RunAs.class);
+                RunAs runAs = classClass.getAnnotation(RunAs.class);
                 if (runAs != null) {
                     wrapper.setRunAs(runAs.value());
                 }
 
                 // Process ServletSecurity annotation
-                ServletSecurity servletSecurity = clazz.getAnnotation(ServletSecurity.class);
+                ServletSecurity servletSecurity = classClass.getAnnotation(ServletSecurity.class);
                 if (servletSecurity != null) {
                     context.addServletSecurity(
                             new ApplicationServletRegistration(wrapper, context),
