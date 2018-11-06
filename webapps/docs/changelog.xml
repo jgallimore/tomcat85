@@ -187,6 +187,10 @@
         <bug>60409</bug>: When unable to complete sendfile request, ensure the
         Processor will be added to the cache only once. (markt/violetagg)
       </fix>
+      <fix>
+        <bug>60101</bug>: Remove preloading of the class that was deleted.
+        (violetagg)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="WebSocket">
