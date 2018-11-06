@@ -56,6 +56,10 @@
         enabled but without the command line option it requires. (markt)
       </fix>
       <fix>
+        <bug>61101</bug>: CORS filter should set Vary header in response.
+        Submitted by Rick Riemer. (remm)
+      </fix>
+      <fix>
         Ensure NPE will not be thrown during deployment when scanning jar files
         without MANIFEST.MF file. (violetagg)
       </fix>
@@ -83,6 +87,24 @@
         <bug>59655</bug>: Configure the cookie name validation to use RFC6265 rules by default to
         align it with the default cookie parser. Document the impact system properties have on
         cookie name validation. (mark)
+      </fix>
+      <fix>
+        Improve handing of overflow in the UTF-8 decoder with supplementary
+        characters. (markt)
+      </fix>
+      <fix>
+        <bug>62343</bug>: Make CORS filter defaults more secure. This is the fix
+        for CVE-2018-8014. (markt)
+      </fix>
+      <add>
+        When adding and removing <code>ResourceLink</code>s dynamically, ensure
+        that the global resource is only visible via the
+        <code>ResourceLinkFactory</code> when it is meant to be. (markt)
+      </add>
+      <fix>
+        Improve the access checks for linked global resources to handle the case
+        where the current class loader is a child of the web application class
+        loader. (markt)
       </fix>
       <fix>
         Process all <code>ServletSecurity</code> annotations at web application
@@ -128,6 +150,10 @@
         <code>AsycnListener.onError()</code>) is called. (markt)
       </fix>
       <fix>
+        <bug>61120</bug>: Do not ignore path parameters when processing HTTP/2
+        requests. (markt)
+      </fix>
+      <fix>
        If an async dispatch results in the completion of request processing,
        ensure that any remaining request body is swallowed before starting the
        processing of the next request else the remaining body may be read as the
@@ -135,6 +161,16 @@
       </fix>
       <fix>
         Fix a cause of multiple attempts to close the same socket. (markt)
+      </fix>
+      <fix>
+        <bug>60918</bug>: Fix sendfile processing error that could lead to
+        subsequent requests experiencing and <code>IllegalStateException</code>.
+        (markt)
+      </fix>
+      <fix>
+        <bug>60232</bug>: When processing headers for an HTTP/2 stream, ensure
+        that the read buffer is large enough for the header being processed.
+        (markt)
       </fix>
     </changelog>
   </subsection>
@@ -153,6 +189,18 @@
         <bug>59654</bug>: Improve error message when attempting to use a TLD
         file from an invalid location. Patch provided by Huxing Zhang. (markt)
       </fix>
+      <fix>
+        Ignore <code>engineOptionsClass</code> and <code>scratchdir</code> when
+        running under a security manager. (markt)
+      </fix>
+      <fix>
+        <bug>60409</bug>: When unable to complete sendfile request, ensure the
+        Processor will be added to the cache only once. (markt/violetagg)
+      </fix>
+      <fix>
+        <bug>60101</bug>: Remove preloading of the class that was deleted.
+        (violetagg)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="WebSocket">
@@ -160,6 +208,10 @@
       <fix>
         <bug>59659</bug>: Fix possible memory leak in WebSocket handling of
         unexpected client disconnects. (markt)
+      </fix>
+      <fix>
+        Enable host name verification when using TLS with the WebSocket client.
+        (markt)
       </fix>
     </changelog>
   </subsection>

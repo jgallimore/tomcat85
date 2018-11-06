@@ -24,6 +24,7 @@ import org.apache.coyote.ProtocolException;
 import org.apache.coyote.http2.HpackDecoder.HeaderEmitter;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
+import org.apache.tomcat.util.buf.ByteBufferUtils;
 import org.apache.tomcat.util.res.StringManager;
 
 class Http2Parser {
@@ -40,7 +41,8 @@ class Http2Parser {
     private final byte[] frameHeaderBuffer = new byte[9];
 
     private volatile HpackDecoder hpackDecoder;
-    private final ByteBuffer headerReadBuffer = ByteBuffer.allocate(1024);
+    private volatile ByteBuffer headerReadBuffer =
+            ByteBuffer.allocate(Constants.DEFAULT_HEADER_READ_BUFFER_SIZE);
     private volatile int headersCurrentStream = -1;
     private volatile boolean headersEndStream = false;
 
@@ -394,8 +396,24 @@ class Http2Parser {
     private void readHeaderBlock(int payloadSize, boolean endOfHeaders)
             throws Http2Exception, IOException {
 
-        while (payloadSize > 0) {
-            int toRead = Math.min(headerReadBuffer.remaining(), payloadSize);
+        int remaining = payloadSize;
+
+        while (remaining > 0) {
+            if (headerReadBuffer.remaining() == 0) {
+                // Buffer needs expansion
+                int newSize;
+                if (headerReadBuffer.capacity() < payloadSize) {
+                    // First step, expand to the current payload. That should
+                    // cover most cases.
+                    newSize = payloadSize;
+                } else {
+                    // Header must be spread over multiple frames. Keep doubling
+                    // buffer size until the header can be read.
+                    newSize = headerReadBuffer.capacity() * 2;
+                }
+                headerReadBuffer = ByteBufferUtils.expand(headerReadBuffer, newSize);
+            }
+            int toRead = Math.min(headerReadBuffer.remaining(), remaining);
             // headerReadBuffer in write mode
             input.fill(true, headerReadBuffer, toRead);
             // switch to read mode
@@ -409,13 +427,18 @@ class Http2Parser {
             }
             // switches to write mode
             headerReadBuffer.compact();
-            payloadSize -= toRead;
+            remaining -= toRead;
         }
 
         if (headerReadBuffer.position() > 0 && endOfHeaders) {
             throw new ConnectionException(
                     sm.getString("http2Parser.processFrameHeaders.decodingDataLeft"),
                     Http2Error.COMPRESSION_ERROR);
+        }
+
+        // Reset size for new request if the buffer was previously expanded
+        if (headerReadBuffer.capacity() > Constants.DEFAULT_HEADER_READ_BUFFER_SIZE) {
+            headerReadBuffer = ByteBuffer.allocate(Constants.DEFAULT_HEADER_READ_BUFFER_SIZE);
         }
     }
 
