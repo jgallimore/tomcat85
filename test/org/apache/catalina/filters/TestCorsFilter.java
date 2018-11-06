@@ -163,7 +163,6 @@ public class TestCorsFilter {
     }
 
     /*
-     * Tests the presence of the origin (and not '*') in the response, when
      * Tests the that supports credentials may not be enabled with any origin,
      * '*'.
      *
