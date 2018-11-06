@@ -18,6 +18,7 @@ package org.apache.coyote;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.tomcat.util.net.AbstractEndpoint.Handler.SocketState;
 import org.apache.tomcat.util.res.StringManager;
@@ -161,6 +162,15 @@ public class AsyncStateMachine {
 
     private volatile AsyncState state = AsyncState.DISPATCHED;
     private volatile long lastAsyncStart = 0;
+    /*
+     * Tracks the current generation of async processing for this state machine.
+     * The generation is incremented every time async processing is started. The
+     * primary purpose of this is to enable Tomcat to detect and prevent
+     * attempts to process an event for a previous generation with the current
+     * generation as processing such an event usually ends badly:
+     * e.g. CVE-2018-8037.
+     */
+    private final AtomicLong generation = new AtomicLong(0);
     // Need this to fire listener on complete
     private AsyncContextCallback asyncCtxt = null;
     private final AbstractProcessor processor;
@@ -206,8 +216,13 @@ public class AsyncStateMachine {
         return lastAsyncStart;
     }
 
+    long getCurrentGeneration() {
+        return generation.get();
+    }
+
     public synchronized void asyncStart(AsyncContextCallback asyncCtxt) {
         if (state == AsyncState.DISPATCHED) {
+            generation.incrementAndGet();
             state = AsyncState.STARTING;
             this.asyncCtxt = asyncCtxt;
             lastAsyncStart = System.currentTimeMillis();

@@ -718,8 +718,24 @@ public abstract class AbstractProtocol<S> implements ProtocolHandler,
             S socket = wrapper.getSocket();
 
             Processor processor = connections.get(socket);
-            if ((status == SocketEvent.DISCONNECT || status == SocketEvent.ERROR)
-                    && processor == null) {
+            if (getLog().isDebugEnabled()) {
+                getLog().debug(sm.getString("abstractConnectionHandler.connectionsGet",
+                        processor, socket));
+            }
+
+            // Async timeouts are calculated on a dedicated thread and then
+            // dispatched. Because of delays in the dispatch process, the
+            // timeout may no longer be required. Check here and avoid
+            // unnecessary processing.
+            if (SocketEvent.TIMEOUT == status && (processor == null ||
+                    !processor.isAsync() || !processor.checkAsyncTimeoutGeneration())) {
+                // This is effectively a NO-OP
+                return SocketState.OPEN;
+            }
+            if (processor != null) {
+                // Make sure an async timeout doesn't fire
+                getProtocol().removeWaitingProcessor(processor);
+            } else if (status == SocketEvent.DISCONNECT || status == SocketEvent.ERROR) {
                 // Nothing to do. Endpoint requested a close and there is no
                 // longer a processor associated with this socket.
                 return SocketState.CLOSED;

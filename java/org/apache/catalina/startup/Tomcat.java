@@ -899,14 +899,18 @@ public class Tomcat {
                 Context context = (Context) event.getLifecycle();
                 if (event.getType().equals(Lifecycle.CONFIGURE_START_EVENT)) {
                     context.setConfigured(true);
-                }
-                // LoginConfig is required to process @ServletSecurity
-                // annotations
-                if (context.getLoginConfig() == null) {
-                    context.setLoginConfig(
+
+                    // Process annotations
+                    WebAnnotationSet.loadApplicationAnnotations(context);
+
+                    // LoginConfig is required to process @ServletSecurity
+                    // annotations
+                    if (context.getLoginConfig() == null) {
+                        context.setLoginConfig(
                             new LoginConfig("NONE", null, null, null));
-                    context.getPipeline().addValve(new NonLoginAuthenticator());
-                }
+                        context.getPipeline().addValve(new NonLoginAuthenticator());
+                    }
+				}
             } catch (ClassCastException e) {
                 return;
             }
