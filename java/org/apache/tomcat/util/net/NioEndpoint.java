@@ -890,7 +890,6 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel> {
                     // Setup the file channel
                     File f = new File(sd.fileName);
                     if (!f.exists()) {
-                        cancelledKey(sk);
                         return SendfileState.ERROR;
                     }
                     @SuppressWarnings("resource") // Closed when channel is closed
@@ -964,16 +963,12 @@ public class NioEndpoint extends AbstractJsseEndpoint<NioChannel> {
                 if (log.isDebugEnabled()) log.debug("Unable to complete sendfile request:", x);
                 if (!calledByProcessor && sc != null) {
                     close(sc, sk);
-                } else {
-                    cancelledKey(sk);
                 }
                 return SendfileState.ERROR;
             } catch (Throwable t) {
                 log.error("", t);
                 if (!calledByProcessor && sc != null) {
                     close(sc, sk);
-                } else {
-                    cancelledKey(sk);
                 }
                 return SendfileState.ERROR;
             }
