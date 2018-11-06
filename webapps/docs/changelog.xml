@@ -126,6 +126,11 @@
       <fix>
         Fix a cause of multiple attempts to close the same socket. (markt)
       </fix>
+      <fix>
+        <bug>60918</bug>: Fix sendfile processing error that could lead to
+        subsequent requests experiencing and <code>IllegalStateException</code>.
+        (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Jasper">
