@@ -120,6 +120,10 @@
         <bug>62067</bug>: Correctly apply security constraints mapped to the
         context root using a URL pattern of <code>&quot;&quot;</code>. (markt)
       </fix>
+      <fix>
+        Ensure request and response facades are used when firing application
+        listeners. (markt/remm)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
