@@ -153,6 +153,11 @@
         subsequent requests experiencing and <code>IllegalStateException</code>.
         (markt)
       </fix>
+      <fix>
+        <bug>60232</bug>: When processing headers for an HTTP/2 stream, ensure
+        that the read buffer is large enough for the header being processed.
+        (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Jasper">
