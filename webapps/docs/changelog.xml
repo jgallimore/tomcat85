@@ -56,6 +56,10 @@
         enabled but without the command line option it requires. (markt)
       </fix>
       <fix>
+        <bug>61101</bug>: CORS filter should set Vary header in response.
+        Submitted by Rick Riemer. (remm)
+      </fix>
+      <fix>
         Ensure NPE will not be thrown during deployment when scanning jar files
         without MANIFEST.MF file. (violetagg)
       </fix>

@@ -283,6 +283,10 @@ public final class CorsFilter implements Filter {
                     exposedHeadersString);
         }
 
+        // Indicate the response depends on the origin
+        response.addHeader(CorsFilter.REQUEST_HEADER_VARY,
+                CorsFilter.REQUEST_HEADER_ORIGIN);
+
         // Forward the request down the filter chain.
         filterChain.doFilter(request, response);
     }
@@ -975,6 +979,13 @@ public final class CorsFilter implements Filter {
             "Access-Control-Allow-Headers";
 
     // -------------------------------------------------- CORS Request Headers
+
+    /**
+     * The Vary header indicates allows disabling proxy caching by indicating
+     * the the response depends on the origin.
+     */
+    public static final String REQUEST_HEADER_VARY = "Vary";
+
     /**
      * The Origin header indicates where the cross-origin request or preflight
      * request originates from.
