@@ -142,6 +142,10 @@
         Add additional checks for valid characters to the HTTP request line
         parsing so invalid request lines are rejected sooner. (markt)
       </add>
+      <fix>
+        When generating a redirect to a directory in the Default Servlet, avoid
+        generating a protocol relative redirect. (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
@@ -208,6 +212,9 @@
       <fix>
         Correct the HTTP header parser so that DEL is not treated as a valid
         token character. (markt) 
+      </fix>
+      <fix>
+        Improve sendfile handling when requests are pipelined. (markt)
       </fix>
     </changelog>
   </subsection>
