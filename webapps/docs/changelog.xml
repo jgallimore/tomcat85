@@ -144,6 +144,10 @@
         adding them to the resource handling ensures that the checks are always
         performed. (markt)
       </fix>
+      <fix>
+        When generating a redirect to a directory in the Default Servlet, avoid
+        generating a protocol relative redirect. (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Coyote">
@@ -206,6 +210,9 @@
       <fix>
         <bug>61918</bug>: Fix connectionLimitLatch counting when closing an
         already closed socket. Based on a patch by Ryan Fong. (remm)
+      </fix>
+      <fix>
+        Improve sendfile handling when requests are pipelined. (markt)
       </fix>
     </changelog>
   </subsection>
